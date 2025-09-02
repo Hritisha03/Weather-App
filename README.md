@@ -23,8 +23,4 @@ A simple weather app built with **HTML, CSS, and JavaScript** that uses the **Op
 
 ---
 
-## ⚙️ Setup Instructions
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/weather-app.git
-   cd weather-app
+  
