@@ -1,34 +1,56 @@
-const apiKey = "51120c807df651370c746ea336ec75c7"; 
 const searchBtn = document.getElementById("searchBtn");
 const weatherInfo = document.getElementById("weatherInfo");
 
 searchBtn.addEventListener("click", () => {
   const city = document.getElementById("city").value;
   if (city) {
-    getWeather(city);
+    getCoordinates(city);
   } else {
     weatherInfo.innerHTML = "<p>Please enter a city name!</p>";
   }
 });
 
-async function getWeather(city) {
+async function getCoordinates(city) {
+  weatherInfo.innerHTML = "<p>⏳ Fetching location...</p>";
   try {
     const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
     );
-    if (!response.ok) throw new Error("City not found");
     const data = await response.json();
-    showWeather(data);
+
+    console.log("Geocoding response:", data); // 👈 Debugging line
+
+    if (!data.results || data.results.length === 0) {
+      throw new Error("City not found");
+    }
+
+    const { latitude, longitude, name, country } = data.results[0];
+    getWeather(latitude, longitude, name, country);
   } catch (error) {
-    weatherInfo.innerHTML = `<p>${error.message}</p>`;
+    weatherInfo.innerHTML = `<p>❌ ${error.message}</p>`;
   }
 }
 
-function showWeather(data) {
+
+async function getWeather(lat, lon, cityName, country) {
+  weatherInfo.innerHTML = "<p>⏳ Fetching weather...</p>";
+  try {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`
+    );
+    const data = await response.json();
+    showWeather(data, cityName, country);
+  } catch (error) {
+    weatherInfo.innerHTML = `<p>⚠️ Failed to fetch weather</p>`;
+  }
+}
+
+function showWeather(data, cityName, country) {
+  const current = data.current;
   weatherInfo.innerHTML = `
-    <h2>${data.name}, ${data.sys.country}</h2>
-    <p>🌡️ Temperature: ${data.main.temp}°C</p>
-    <p>🌥️ Weather: ${data.weather[0].description}</p>
-    <p>💨 Wind Speed: ${data.wind.speed} m/s</p>
+    <h2>${cityName}, ${country}</h2>
+    <p>🌡️ Temperature: ${current.temperature_2m}°C</p>
+    <p>💨 Wind Speed: ${current.wind_speed_10m} km/h</p>
+    <p>🕒 Time: ${current.time}</p>
   `;
 }
